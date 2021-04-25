@@ -1,0 +1,13 @@
+digraph {
+    0 [ label = "\"Root\"" ]
+    1 [ label = "\"\"" ]
+    2 [ label = "\"S_1\"" ]
+    3 [ label = "\"S_2\"" ]
+    4 [ label = "\"S_3\"" ]
+    5 [ label = "\"S_4\"" ]
+    0 -> 1 [ label = "\"C_1\"" ]
+    1 -> 2 [ label = "\"C_2\"" ]
+    0 -> 3 [ label = "\"C_3\"" ]
+    2 -> 4 [ label = "\"C_5\"" ]
+    3 -> 5 [ label = "\"C_4\"" ]
+}
