@@ -1,5 +1,5 @@
 [package]
-name = "perfect-phy-rs"
+name = "perfect-phylogeny-rs"
 version = "0.1.0"
 edition = "2018"
 

@@ -6,7 +6,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 
 #[allow(dead_code)]
-struct PerfectPhylogeny {
+pub struct PerfectPhylogeny {
     matrix: Vec<Vec<usize>>,
     order: Vec<(usize, usize)>,
     perfect: bool,
