@@ -22,4 +22,5 @@ Input:
 0   1   0   0   0
 ```
 Output:
+
 ![](https://raw.githubusercontent.com/dlcgold/perfect-phylogeny-rs/main/output/final.png)
