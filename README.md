@@ -11,3 +11,15 @@ fn main() {
     per_phy.get_dot("output/final.dot");
 }
 ```
+
+## Example
+Input:
+```
+1   1   0   0   0
+0   0   1   0   0
+1   1   0   0   1
+0   0   1   1   0
+0   1   0   0   0
+```
+Output:
+![](https://raw.githubusercontent.com/dlcgold/perfect-phylogeny-rs/main/output/final.png)
