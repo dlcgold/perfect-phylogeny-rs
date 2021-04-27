@@ -61,7 +61,9 @@ impl PerfectPhylogeny {
                     }
                 }
             }
-            *graph.node_weight_mut(curr).unwrap() = format!("S_{}", i + 1);
+            let mut tmp = graph.node_weight_mut(curr).unwrap().clone();
+            tmp.push_str(&*format!(" S_{}", i + 1));
+            *graph.node_weight_mut(curr).unwrap() = tmp;
         }
 
         // create leaves for interal node with label
@@ -70,10 +72,14 @@ impl PerfectPhylogeny {
                 && graph.node_weight(node).unwrap() != ""
                 && graph.neighbors_directed(node, Outgoing).count() != 0
             {
-                let label = graph.node_weight(node).unwrap().clone();
-                let new_node = graph.add_node(label);
-                *graph.node_weight_mut(node).unwrap() = "".to_string();
-                graph.add_edge(node, new_node, "".to_string());
+                let label_tot: Vec<String> = graph.node_weight(node).unwrap().clone().split_whitespace().map(|s| s.to_string()).collect();
+                for label in label_tot {
+                    if label != "" {
+                        let new_node = graph.add_node(label);
+                        *graph.node_weight_mut(node).unwrap() = "".to_string();
+                        graph.add_edge(node, new_node, "".to_string());
+                    }
+                }
             }
         }
 
@@ -183,7 +189,7 @@ mod tests {
     #[test]
     fn test_phylo() {
         let per_phy = PerfectPhylogeny::from_file("input/matrix.txt");
-        per_phy.get_dot("output/final.dot");
+        per_phy.get_dot("output/good.dot");
         assert!(per_phy.perfect());
     }
 
