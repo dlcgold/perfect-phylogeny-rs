@@ -15,7 +15,7 @@ pub struct PerfectPhylogeny {
 
 impl PerfectPhylogeny {
     #[allow(dead_code)]
-    pub fn new(mat: Vec<Vec<usize>>) -> PerfectPhylogeny {
+    pub fn new(mat: &Vec<Vec<usize>>, internal: bool) -> PerfectPhylogeny {
         let rowlen = mat.len();
         let collen = mat[0].len();
         let mut dim = vec![(0, 0); collen];
@@ -32,7 +32,7 @@ impl PerfectPhylogeny {
         let check = PerfectPhylogeny::is_laminar(&mat, &dim);
         if !check {
             return PerfectPhylogeny {
-                matrix: mat,
+                matrix: mat.clone(),
                 order: dim,
                 perfect: false,
                 tree: Graph::new(),
@@ -62,8 +62,13 @@ impl PerfectPhylogeny {
                 }
             }
             let mut tmp = graph.node_weight_mut(curr).unwrap().clone();
-            tmp.push_str(&*format!(" S_{}", i + 1));
-            *graph.node_weight_mut(curr).unwrap() = tmp;
+            if tmp == "Root" {
+                let node = graph.add_node(format!("S_{}", i + 1));
+                graph.update_edge(source, node, "".to_string());
+            } else {
+                tmp.push_str(&*format!("S_{}", i + 1));
+                *graph.node_weight_mut(curr).unwrap() = tmp;
+            }
         }
 
         // create leaves for interal node with label
@@ -76,8 +81,31 @@ impl PerfectPhylogeny {
                 for label in label_tot {
                     if label != "" {
                         let new_node = graph.add_node(label);
-                        *graph.node_weight_mut(node).unwrap() = "".to_string();
+                        if !internal {
+                            *graph.node_weight_mut(node).unwrap() = "".to_string();
+                        }
                         graph.add_edge(node, new_node, "".to_string());
+                    }
+                }
+            }
+        }
+
+        // separets leaves
+        for node in graph.node_indices() {
+            if graph.node_weight(node).unwrap() != "Root"
+                && graph.node_weight(node).unwrap() != ""
+                && graph.neighbors_directed(node, Outgoing).count() == 0
+            {
+                let label_tot: Vec<String> = graph.node_weight(node).unwrap().clone().split_whitespace().map(|s| s.to_string()).collect();
+                if label_tot.len() > 1 {
+                    for label in label_tot {
+                        if label != "" {
+                            let new_node = graph.add_node(label);
+                            if !internal {
+                                *graph.node_weight_mut(node).unwrap() = "".to_string();
+                            }
+                            graph.add_edge(node, new_node, "".to_string());
+                        }
                     }
                 }
             }
@@ -107,14 +135,15 @@ impl PerfectPhylogeny {
             graph.remove_node(node);
         }
         PerfectPhylogeny {
-            matrix: mat,
+            matrix: mat.clone(),
             order: dim,
             perfect: true,
             tree: graph,
         }
     }
+
     #[allow(dead_code)]
-    pub fn from_file(file: &str) -> PerfectPhylogeny {
+    pub fn from_file(file: &str, internal: bool) -> PerfectPhylogeny {
         let f = BufReader::new(File::open(file).unwrap());
         let mut mat = Vec::new();
         for line in f.lines() {
@@ -125,7 +154,66 @@ impl PerfectPhylogeny {
                 .collect();
             mat.push(tmp);
         }
-        PerfectPhylogeny::new(mat)
+        PerfectPhylogeny::new(&mat, internal)
+    }
+
+
+    #[allow(dead_code)]
+    pub fn from_file_err(file: &str, internal: bool) -> PerfectPhylogeny {
+        let f = BufReader::new(File::open(&file).unwrap());
+        let mut mat = Vec::new();
+        let mut err = false;
+        for mut line in f.lines() {
+            if line.as_ref().unwrap().contains("*") {
+                err = true;
+                line = Ok(line.as_ref().unwrap().replace("*", "2"));
+            }
+            let tmp: Vec<usize> = line
+                .unwrap()
+                .split_whitespace()
+                .map(|c| c.parse::<usize>().unwrap())
+                .collect();
+            mat.push(tmp);
+        }
+        let mut perf_errs = Vec::new();
+        if err == true {
+            let correction = vec![(0, 0), (0, 1), (1, 0), (1, 1)];
+            for corr in correction {
+                println!("testing ({},{})", corr.0, corr.1);
+                let mut mattmp = mat.clone();
+                println!("{:?}", mattmp);
+                let mut first = true;
+                for i in 0..mattmp.len() {
+                    for j in 0..mattmp[0].len() {
+                        if mattmp[i][j] == 2 {
+                            if first {
+                                mattmp[i][j] = corr.0;
+                                first = false;
+                            } else {
+                                mattmp[i][j] = corr.1;
+                            }
+                        }
+                    }
+                }
+                println!("{:?}", &mattmp);
+                let perf = PerfectPhylogeny::new(&mattmp, internal);
+                if perf.perfect() {
+                    println!("ok");
+                    perf_errs.push(perf);
+                }
+            }
+            println!("total: {}", perf_errs.len());
+            for (i, per) in perf_errs.iter().enumerate() {
+                let out = file.to_string().clone();
+                let names_slash: Vec<&str> = out.split("/").collect();
+                let names_dot: Vec<&str> = names_slash[1].split(".").collect();
+                let mut outstr = names_dot[0].to_string();
+                outstr.push_str("_");
+                outstr.push_str(&i.to_string());
+                per.get_dot(&format!("output/{}", outstr));
+            }
+        }
+        return PerfectPhylogeny::new(&mat, internal);
     }
 
     #[allow(dead_code)]
@@ -146,6 +234,20 @@ impl PerfectPhylogeny {
     }
 
     fn is_laminar(mat: &Vec<Vec<usize>>, order: &Vec<(usize, usize)>) -> bool {
+        /*for i in 0..mat.len() {
+            for j in 0..mat[0].len(){
+                print!("{} ", mat[i][j]);
+            }
+            println!();
+        }
+        println!("*-*-*-*-*-*");
+        for i in 0..mat.len() {
+            for j in order.iter(){
+                print!("{} ", mat[i][j.1]);
+            }
+            println!();
+        }
+        println!("*-*-*-*-*-*");*/
         let rowlen = mat.len();
         let collen = mat[0].len();
         let mut lmat = vec![vec![0; collen]; rowlen];
@@ -154,10 +256,16 @@ impl PerfectPhylogeny {
             for j in order.iter() {
                 if mat[i][j.1] == 1 {
                     lmat[i][j.1] = k;
-                    k = j.1 as i32;
+                    k = (j.1 + 1) as i32;
                 }
             }
         }
+        /*for i in 0..lmat.len() {
+            for j in 0..lmat[0].len(){
+                print!("{} ", lmat[i][j]);
+            }
+            println!();
+        }*/
         for j in 0..collen {
             let mut first = true;
             let mut tmp = 0;
@@ -188,21 +296,51 @@ mod tests {
 
     #[test]
     fn test_phylo() {
-        let per_phy = PerfectPhylogeny::from_file("input/matrix.txt");
+        let per_phy = PerfectPhylogeny::from_file("input/matrix.txt", false);
         per_phy.get_dot("output/good.dot");
         assert!(per_phy.perfect());
     }
 
     #[test]
+    fn test_phylo_int() {
+        let per_phy = PerfectPhylogeny::from_file("input/matrix.txt", true);
+        per_phy.get_dot("output/goodi.dot");
+        assert!(per_phy.perfect());
+    }
+
+    #[test]
     fn test_phylo_nop() {
-        let per_phy = PerfectPhylogeny::from_file("input/matrix_nop.txt");
+        let per_phy = PerfectPhylogeny::from_file("input/matrix_nop.txt", false);
         assert!(!per_phy.perfect());
     }
 
     #[test]
     fn test_phylo_wiki() {
-        let per_phy = PerfectPhylogeny::from_file("input/matrix2.txt");
+        let per_phy = PerfectPhylogeny::from_file("input/matrix2.txt", false);
         per_phy.get_dot("output/wiki.dot");
+        assert!(per_phy.perfect());
+    }
+
+    #[test]
+    fn test_phylo_bho() {
+        let per_phy = PerfectPhylogeny::from_file("input/matrix_bho.txt", false);
+        per_phy.get_dot("output/bho.dot");
+        assert!(per_phy.perfect());
+    }
+
+    #[test]
+    fn test_phylo_err() {
+        let per_phy = PerfectPhylogeny::from_file("input/matrix_error.txt", false);
+        per_phy.get_dot("output/bho.dot");
+        //assert!(per_phy.perfect());
+    }
+
+    #[test]
+    fn test_phylo_a() {
+        //let per_phy = PerfectPhylogeny::from_file("input/matrix_error.txt", false);
+        //per_phy.get_dot("output/s.dot");
+        //assert!(per_phy.perfect());
+        let per_phy = PerfectPhylogeny::from_file("input/matrix_error2.txt", false);
         assert!(per_phy.perfect());
     }
 }
