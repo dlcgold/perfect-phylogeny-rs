@@ -63,10 +63,10 @@ impl PerfectPhylogeny {
             }
             let mut tmp = graph.node_weight_mut(curr).unwrap().clone();
             if tmp == "Root" {
-                let node = graph.add_node(format!("S_{}", i + 1));
+                let node = graph.add_node(format!(" S_{}", i + 1));
                 graph.update_edge(source, node, "".to_string());
             } else {
-                tmp.push_str(&*format!("S_{}", i + 1));
+                tmp.push_str(&*format!(" S_{}", i + 1));
                 *graph.node_weight_mut(curr).unwrap() = tmp;
             }
         }
@@ -284,7 +284,12 @@ impl PerfectPhylogeny {
 
     #[allow(dead_code)]
     pub fn get_dot(&self, output: &str) {
-        let dot = format!("{:?}", Dot::new(&self.tree));
+        let mut dot = format!("{:?}", Dot::new(&self.tree));
+        dot = dot.trim().to_string();
+        dot = dot.replace("\\\"", "");
+        dot = dot.replace("_", "");
+        dot = dot.replace("\" ", "\"");
+        dot = dot.replace(" \"", "\"");
         let mut fileout = File::create(output).expect("error");
         fileout.write_all(dot.as_bytes()).expect("error");
     }
