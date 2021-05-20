@@ -260,12 +260,12 @@ impl PerfectPhylogeny {
                 }
             }
         }
-        /*for i in 0..lmat.len() {
+        for i in 0..lmat.len() {
             for j in 0..lmat[0].len(){
                 print!("{} ", lmat[i][j]);
             }
             println!();
-        }*/
+        }
         for j in 0..collen {
             let mut first = true;
             let mut tmp = 0;
@@ -347,5 +347,14 @@ mod tests {
         //assert!(per_phy.perfect());
         let per_phy = PerfectPhylogeny::from_file("input/matrix_error2.txt", false);
         assert!(per_phy.perfect());
+    }
+
+    #[test]
+    fn test_phylo_m() {
+        //let per_phy = PerfectPhylogeny::from_file("input/matrix_error.txt", false);
+        //per_phy.get_dot("output/s.dot");
+        //assert!(per_phy.perfect());
+        let per_phy = PerfectPhylogeny::from_file("input/m.txt", false);
+        assert!(!   per_phy.perfect());
     }
 }

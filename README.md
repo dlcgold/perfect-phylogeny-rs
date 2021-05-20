@@ -7,7 +7,7 @@ Simple test for obtain perfect phylogeny tree from laminar matrix.
 use perfect_phylogeny_rs::PerfectPhylogeny;
 
 fn main() {
-    let per_phy = PerfectPhylogeny::from_file("input/matrix.txt");
+    let per_phy = PerfectPhylogeny::from_file("input/matrix.txt", false);
     per_phy.get_dot("output/final.dot");
 }
 ```
