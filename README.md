@@ -26,4 +26,4 @@ Output:
 ![](https://raw.githubusercontent.com/dlcgold/perfect-phylogeny-rs/main/output/final.png)
 
 ## TODO
-- [] Documentation
+- [ ] Documentation
